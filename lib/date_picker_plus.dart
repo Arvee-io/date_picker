@@ -8,3 +8,4 @@ export 'src/shared/year_picker.dart';
 export 'src/range/range_picker.dart';
 export 'src/range/show_range_picker_dialog.dart';
 export 'src/shared/picker_type.dart';
+export 'src/shared/blackout_dates.dart';

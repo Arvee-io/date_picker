@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../shared/device_orientation_builder.dart';
 import '../shared/picker_type.dart';
+import '../shared/blackout_dates.dart';
 import 'range_picker.dart';
 
 /// Shows a dialog containing a Material Design range picker.
@@ -41,6 +42,7 @@ Future<DateTimeRange?> showRangePickerDialog({
   double? height,
   DateTime? initialDate,
   DateTime? currentDate,
+  List<BlackoutDates>? blackoutDates,
   DateTimeRange? selectedRange,
   EdgeInsets contentPadding = const EdgeInsets.all(16),
   EdgeInsets padding = const EdgeInsets.all(36),
@@ -105,6 +107,7 @@ Future<DateTimeRange?> showRangePickerDialog({
                 currentDate: currentDate,
                 maxDate: maxDate,
                 minDate: minDate,
+                blackoutDates: blackoutDates,
                 initialDate: initialDate,
                 selectedRange: selectedRange,
                 onRangeSelected: (value) => Navigator.pop(context, value),

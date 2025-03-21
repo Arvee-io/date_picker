@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../shared/device_orientation_builder.dart';
 import '../shared/header.dart';
 import '../shared/utils.dart';
+import '../shared/blackout_dates.dart';
 import 'range_days_view.dart';
 
 /// A scrollable grid of months to allow picking a day range.
@@ -11,6 +12,7 @@ class RangeDaysPicker extends StatefulWidget {
     super.key,
     required this.minDate,
     required this.maxDate,
+    this.blackoutDates,
     this.initialDate,
     this.currentDate,
     this.selectedStartDate,
@@ -114,6 +116,13 @@ class RangeDaysPicker extends StatefulWidget {
   ///
   /// Note that only dates are considered. time fields are ignored.
   final DateTime maxDate;
+
+  /// A list of blackout dates
+  ///
+  /// The dates in this list will not be selectable
+  ///
+  /// Note only dates are considered, time fields are ignored.
+  final List<BlackoutDates>? blackoutDates;
 
   /// Called when the user tap on the leading date.
   final VoidCallback? onLeadingDateTap;
@@ -462,6 +471,7 @@ class __RangeDaysPickerState extends State<RangeDaysPicker> {
                         widget.currentDate ?? DateTime.now()),
                     minDate: DateUtils.dateOnly(widget.minDate),
                     maxDate: DateUtils.dateOnly(widget.maxDate),
+                    blackoutDates: widget.blackoutDates,
                     displayedMonth: month,
                     selectedEndDate: widget.selectedEndDate == null
                         ? null

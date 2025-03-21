@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat;
 
 import '../shared/picker_grid_delegate.dart';
+import '../shared/blackout_dates.dart';
 
 /// Displays the days of a given month and allows choosing days range.
 ///
@@ -20,6 +21,7 @@ class RangeDaysView extends StatelessWidget {
     required this.currentDate,
     required this.minDate,
     required this.maxDate,
+    this.blackoutDates,
     required this.selectedStartDate,
     required this.selectedEndDate,
     required this.onStartDateChanged,
@@ -68,6 +70,13 @@ class RangeDaysView extends StatelessWidget {
           (selected.isBefore(max) || selected.isAtSameMomentAs(max));
     }(), "selected end date should be in the range of min date & max date");
   }
+
+  /// A list of blackout dates
+  ///
+  /// The dates in this list will not be selectable
+  ///
+  /// Note only dates are considered, time fields are ignored.
+  final List<BlackoutDates>? blackoutDates;
 
   /// The currently selected start date.
   ///
@@ -240,8 +249,34 @@ class RangeDaysView extends StatelessWidget {
         dayItems.add(const SizedBox.shrink());
       } else {
         final DateTime dayToBuild = DateTime(year, month, day);
-        final bool isDisabled =
-            dayToBuild.isAfter(_maxDate) || dayToBuild.isBefore(_minDate);
+        final List<DateTime> indBlackoutDates = blackoutDates!
+          .expand((BlackoutDates blDate) => blDate.toList())
+          .toList();
+
+        final bool isDisabled = ()
+        {
+          if(dayToBuild.isAfter(_maxDate) || dayToBuild.isBefore(_minDate))
+          {
+            return false;
+          }
+
+          if(blackoutDates == null)
+          {
+            return false;
+          }
+
+          for(DateTime blackoutDate in indBlackoutDates)
+          {
+            blackoutDate = DateTime(blackoutDate.year, blackoutDate.month, blackoutDate.day);
+
+            if(blackoutDate == dayToBuild)
+            {
+              return true;
+            }
+          }
+
+          return false;
+        }();
 
         final isRangeSelected =
             selectedStartDateOnly != null && selectedEndDateOnly != null;

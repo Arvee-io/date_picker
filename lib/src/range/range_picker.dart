@@ -4,6 +4,7 @@ import '../shared/month_picker.dart';
 import '../shared/picker_type.dart';
 import '../shared/utils.dart';
 import '../shared/year_picker.dart';
+import '../shared/blackout_dates.dart';
 import 'range_days_picker.dart';
 
 /// Displays a grid of days for a given month and allows the user to select a
@@ -53,6 +54,7 @@ class RangeDatePicker extends StatefulWidget {
     super.key,
     required this.maxDate,
     required this.minDate,
+    this.blackoutDates,
     this.onRangeSelected,
     this.onLeadingDateTap,
     this.onStartDateChanged,
@@ -132,6 +134,13 @@ class RangeDatePicker extends StatefulWidget {
   ///
   /// Note that only dates are considered. time fields are ignored.
   final DateTime maxDate;
+
+  /// A list of dates that should be disabled
+  ///
+  /// These dates must be between [minDate] and [maxDate]
+  ///
+  /// Note that only dates are considered, time fields are ignored.
+  final List<BlackoutDates>? blackoutDates;
 
   /// The initial display of the calendar picker.
   final PickerType initialPickerType;
@@ -329,6 +338,7 @@ class _RangeDatePickerState extends State<RangeDatePicker> {
             selectedStartDate: _selectedStartDate,
             maxDate: DateUtils.dateOnly(widget.maxDate),
             minDate: DateUtils.dateOnly(widget.minDate),
+            blackoutDates: widget.blackoutDates,
             daysOfTheWeekTextStyle: widget.daysOfTheWeekTextStyle,
             enabledCellsTextStyle: widget.enabledCellsTextStyle,
             enabledCellsDecoration: widget.enabledCellsDecoration,
@@ -364,12 +374,56 @@ class _RangeDatePickerState extends State<RangeDatePicker> {
               
               // this should never be null
               if (_selectedStartDate != null) {
-                widget.onRangeSelected?.call(
-                  DateTimeRange(
-                    start: _selectedStartDate!,
-                    end: _selectedEndDate!,
-                  ),
+
+                final DateTimeRange selectedRange = DateTimeRange(
+                  start: _selectedStartDate!,
+                  end: _selectedEndDate!,
                 );
+
+                if(widget.blackoutDates != null)
+                {
+                  bool rangeHasBlackout = false;
+
+                  final List<DateTime> indBlackoutDates = widget.blackoutDates!
+                    .expand((BlackoutDates blDate) => blDate
+                        .toList()
+                        .map(
+                          (DateTime date) => DateTime(date.year, date.month, date.day)
+                        ))
+                    .toList();
+
+                  for(DateTime blackoutDate in indBlackoutDates) {
+                    
+                    if(blackoutDate.isAfter(selectedRange.start) || 
+                       blackoutDate.isAtSameMomentAs(selectedRange.start)) {
+
+                      if(blackoutDate.isBefore(selectedRange.end) ||
+                         blackoutDate.isAtSameMomentAs(selectedRange.end)) {
+                    
+                        rangeHasBlackout = true;
+                        break;
+                    
+                      }
+                    }
+                  }
+
+                  if(!rangeHasBlackout) {
+                    widget.onRangeSelected?.call(
+                      selectedRange
+                    );      
+                  } else {
+                    setState(() {
+                      _selectedEndDate = null;
+                      _selectedStartDate = null;
+                    });
+                  }
+
+                } else {
+                  widget.onRangeSelected?.call(
+                    selectedRange
+                  );
+                }
+
               }
             },
             onStartDateChanged: (date) {
