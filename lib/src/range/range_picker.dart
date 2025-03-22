@@ -55,10 +55,12 @@ class RangeDatePicker extends StatefulWidget {
     required this.maxDate,
     required this.minDate,
     this.blackoutDates,
+    this.maxDayRange,
     this.onRangeSelected,
     this.onLeadingDateTap,
     this.onStartDateChanged,
     this.onEndDateChanged,
+    this.onMaxDayRangeExceeded,
     this.currentDate,
     this.initialDate,
     this.selectedRange,
@@ -115,6 +117,10 @@ class RangeDatePicker extends StatefulWidget {
   /// Called when the user selects between months/years/days
   final VoidCallback? onLeadingDateTap;
 
+  /// Called when the user tries to select a range that exceeds
+  /// the configured maximum day range
+  final ValueChanged<DateTimeRange>? onMaxDayRangeExceeded;
+
   /// Called when the user picks a new start date to the range
   final ValueChanged<DateTime>? onStartDateChanged;
 
@@ -141,6 +147,9 @@ class RangeDatePicker extends StatefulWidget {
   ///
   /// Note that only dates are considered, time fields are ignored.
   final List<BlackoutDates>? blackoutDates;
+
+  /// The maximum number of days that can be selected
+  final int? maxDayRange;
 
   /// The initial display of the calendar picker.
   final PickerType initialPickerType;
@@ -323,6 +332,104 @@ class _RangeDatePickerState extends State<RangeDatePicker> {
     super.didUpdateWidget(oldWidget);
   }
 
+  void _onStartDateChanged(DateTime date)
+  {
+    setState(() {
+      _selectedStartDate = date;
+      _selectedEndDate = null;
+    });
+
+    widget.onStartDateChanged?.call(date);
+  }
+
+  void _onRangeSelected(DateTimeRange range)
+  {
+    DateTimeRange selectedRange = range;
+
+    if(widget.maxDayRange != null) {
+
+      if(range.duration.inDays > widget.maxDayRange!) {
+        
+          DateTime maxEndDate = _selectedStartDate!.add(
+            Duration(
+              days: widget.maxDayRange!
+            )
+          );
+
+          setState(() {
+            _selectedEndDate = maxEndDate;
+          });
+
+          widget.onMaxDayRangeExceeded?.call(range);
+
+          selectedRange = DateTimeRange(
+            start: _selectedStartDate!,
+            end: maxEndDate
+          );
+      }
+    }
+
+    widget.onRangeSelected?.call(selectedRange);
+  }
+
+  void _onEndDateChanged(DateTime date)
+  {
+    setState(() {
+      _selectedEndDate = date;
+    });
+
+    widget.onEndDateChanged?.call(date);
+    
+    // this should never be null
+    if (_selectedStartDate != null) {
+
+      final DateTimeRange selectedRange = DateTimeRange(
+        start: _selectedStartDate!,
+        end: _selectedEndDate!,
+      );
+
+      if(widget.blackoutDates != null)
+      {
+        bool rangeHasBlackout = false;
+
+        final List<DateTime> indBlackoutDates = widget.blackoutDates!
+          .expand((BlackoutDates blDate) => blDate
+              .toList()
+              .map(
+                (DateTime date) => DateTime(date.year, date.month, date.day)
+              ))
+          .toList();
+
+        for(DateTime blackoutDate in indBlackoutDates) {
+          
+          if(blackoutDate.isAfter(selectedRange.start) || 
+             blackoutDate.isAtSameMomentAs(selectedRange.start)) {
+
+            if(blackoutDate.isBefore(selectedRange.end) ||
+               blackoutDate.isAtSameMomentAs(selectedRange.end)) {
+          
+              rangeHasBlackout = true;
+              break;
+          
+            }
+          }
+        }
+
+        if(!rangeHasBlackout) {
+          _onRangeSelected(selectedRange);
+        } else {
+          setState(() {
+            _selectedEndDate = null;
+            _selectedStartDate = null;
+          });
+        }
+
+      } else {
+        _onRangeSelected(selectedRange);
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     switch (_pickerType!) {
@@ -333,6 +440,7 @@ class _RangeDatePickerState extends State<RangeDatePicker> {
             centerLeadingDate: widget.centerLeadingDate,
             currentDate:
                 DateUtils.dateOnly(widget.currentDate ?? DateTime.now()),
+            maxDayRange: widget.maxDayRange,
             initialDate: _diplayedDate,
             selectedEndDate: _selectedEndDate,
             selectedStartDate: _selectedStartDate,
@@ -365,75 +473,8 @@ class _RangeDatePickerState extends State<RangeDatePicker> {
 
               widget.onLeadingDateTap?.call();
             },
-            onEndDateChanged: (date) {
-              setState(() {
-                _selectedEndDate = date;
-              });
-
-              widget.onEndDateChanged?.call(date);
-              
-              // this should never be null
-              if (_selectedStartDate != null) {
-
-                final DateTimeRange selectedRange = DateTimeRange(
-                  start: _selectedStartDate!,
-                  end: _selectedEndDate!,
-                );
-
-                if(widget.blackoutDates != null)
-                {
-                  bool rangeHasBlackout = false;
-
-                  final List<DateTime> indBlackoutDates = widget.blackoutDates!
-                    .expand((BlackoutDates blDate) => blDate
-                        .toList()
-                        .map(
-                          (DateTime date) => DateTime(date.year, date.month, date.day)
-                        ))
-                    .toList();
-
-                  for(DateTime blackoutDate in indBlackoutDates) {
-                    
-                    if(blackoutDate.isAfter(selectedRange.start) || 
-                       blackoutDate.isAtSameMomentAs(selectedRange.start)) {
-
-                      if(blackoutDate.isBefore(selectedRange.end) ||
-                         blackoutDate.isAtSameMomentAs(selectedRange.end)) {
-                    
-                        rangeHasBlackout = true;
-                        break;
-                    
-                      }
-                    }
-                  }
-
-                  if(!rangeHasBlackout) {
-                    widget.onRangeSelected?.call(
-                      selectedRange
-                    );      
-                  } else {
-                    setState(() {
-                      _selectedEndDate = null;
-                      _selectedStartDate = null;
-                    });
-                  }
-
-                } else {
-                  widget.onRangeSelected?.call(
-                    selectedRange
-                  );
-                }
-
-              }
-            },
-            onStartDateChanged: (date) {
-              setState(() {
-                _selectedStartDate = date;
-                _selectedEndDate = null;
-              });
-
-              widget.onStartDateChanged?.call(date);
-            },
+            onEndDateChanged: _onEndDateChanged,
+            onStartDateChanged: _onStartDateChanged,
           ),
         );
       case PickerType.months:

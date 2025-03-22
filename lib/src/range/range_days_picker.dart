@@ -12,6 +12,7 @@ class RangeDaysPicker extends StatefulWidget {
     super.key,
     required this.minDate,
     required this.maxDate,
+    this.maxDayRange,
     this.blackoutDates,
     this.initialDate,
     this.currentDate,
@@ -123,6 +124,9 @@ class RangeDaysPicker extends StatefulWidget {
   ///
   /// Note only dates are considered, time fields are ignored.
   final List<BlackoutDates>? blackoutDates;
+
+  /// The maximum day range that can be selected
+  final int? maxDayRange;
 
   /// Called when the user tap on the leading date.
   final VoidCallback? onLeadingDateTap;
