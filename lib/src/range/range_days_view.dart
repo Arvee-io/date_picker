@@ -257,7 +257,7 @@ class RangeDaysView extends StatelessWidget {
         {
           if(dayToBuild.isAfter(_maxDate) || dayToBuild.isBefore(_minDate))
           {
-            return false;
+            return true;
           }
 
           if(blackoutDates == null)

@@ -57,6 +57,7 @@ class RangeDatePicker extends StatefulWidget {
     this.blackoutDates,
     this.maxDayRange,
     this.onRangeSelected,
+    this.onRangeReset,
     this.onLeadingDateTap,
     this.onStartDateChanged,
     this.onEndDateChanged,
@@ -116,6 +117,9 @@ class RangeDatePicker extends StatefulWidget {
 
   /// Called when the user selects between months/years/days
   final VoidCallback? onLeadingDateTap;
+
+  /// Called when the range is reset
+  final VoidCallback? onRangeReset;
 
   /// Called when the user tries to select a range that exceeds
   /// the configured maximum day range
@@ -334,6 +338,18 @@ class _RangeDatePickerState extends State<RangeDatePicker> {
 
   void _onStartDateChanged(DateTime date)
   {
+    if((_selectedStartDate != null) && (_selectedEndDate != null))
+    {
+      setState(()
+      {
+        _selectedStartDate = null;
+        _selectedEndDate = null;
+      });
+
+      widget.onRangeReset?.call();
+      return;
+    }
+
     setState(() {
       _selectedStartDate = date;
       _selectedEndDate = null;
